@@ -340,6 +340,39 @@ Return ONLY a JSON array:
     const { data } = ctx;
     const sheetsConfig = getSheetsConfig();
     const excelPath = getExcelPath(config);
+    const targetSheetId = config.sheetId || process.env.DEFAULT_SHEET_ID;
+
+    if (targetSheetId && sheetsConfig.credentialsPath) {
+      try {
+        const auth = new google.auth.GoogleAuth({
+          keyFile: sheetsConfig.credentialsPath,
+          scopes: ['https://www.googleapis.com/auth/spreadsheets']
+        });
+        const sheets = google.sheets({ version: 'v4', auth });
+        const list = Array.isArray(data.prospects) && data.prospects.length ? data.prospects : [data.lead || data];
+        const rows = list.map(lead => [
+          new Date().toLocaleDateString('en-IN'),
+          lead.name || '', lead.owner || '', lead.phone || '',
+          lead.email || '', lead.address || lead.location || '',
+          Array.isArray(lead.needs) ? lead.needs.join(', ') : (lead.needs || ''),
+          lead.estimatedBudget || lead.budget || '',
+          lead.status || 'New', lead.score || '', lead.source || data.source || '',
+          lead.painPoints || lead.notes || ''
+        ]);
+
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: targetSheetId,
+          range: config.range || 'Leads!A:L',
+          valueInputOption: 'USER_ENTERED',
+          resource: { values: rows }
+        });
+
+        ctx.log(`Rows appended to Google Sheet: ${rows.length} (${targetSheetId})`);
+        return { sheetsAppended: true, google: true, appendedCount: rows.length };
+      } catch (e) {
+        ctx.log(`Google Sheets append fallback: ${e.message}`);
+      }
+    }
 
     if (excelPath) {
       const list = Array.isArray(data.prospects) && data.prospects.length ? data.prospects : [data.lead || data];
@@ -369,40 +402,16 @@ Return ONLY a JSON array:
       return { sheetsAppended: false, excel: true, skipped: true };
     }
 
-    if (!sheetsConfig.credentialsPath) {
+    if (targetSheetId && !sheetsConfig.credentialsPath) {
+      ctx.log('⚠ DEFAULT_SHEET_ID is set but GOOGLE_CREDENTIALS_PATH file is missing. Using Excel fallback.');
+    }
+
+    if (!excelPath && !sheetsConfig.credentialsPath) {
       ctx.log('⚠ No Excel or Google Sheets configured. Skipping append.');
       return { sheetsAppended: false, skipped: true };
     }
 
-    try {
-      const auth = new google.auth.GoogleAuth({
-        keyFile: sheetsConfig.credentialsPath,
-        scopes: ['https://www.googleapis.com/auth/spreadsheets']
-      });
-      const sheets = google.sheets({ version: 'v4', auth });
-      const lead = data.lead || data;
-      const row = [
-        new Date().toLocaleDateString('en-IN'),
-        lead.name || '', lead.owner || '', lead.phone || '',
-        lead.email || '', lead.address || lead.location || '',
-        (lead.needs || []).join(', '), lead.estimatedBudget || lead.budget || '',
-        lead.status || 'New', lead.score || '', lead.source || '',
-        lead.painPoints || lead.notes || ''
-      ];
-
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: config.sheetId,
-        range: config.range || 'Sheet1!A:L',
-        valueInputOption: 'USER_ENTERED',
-        resource: { values: [row] }
-      });
-
-      ctx.log(`Row appended to Google Sheet: ${config.sheetId}`);
-      return { sheetsAppended: true };
-    } catch (e) {
-      ctx.log(`Sheets append error: ${e.message}`);
-      throw e;
-    }
+    return { sheetsAppended: false, skipped: true };
   },
 
   action_sheets_read: async (config, ctx) => {
