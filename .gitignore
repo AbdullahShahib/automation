@@ -2,5 +2,10 @@ node_modules/
 .env
 data/google-credentials.json
 data/app.log
+data/executions.json
+data/leads.json
+data/settings.json
+data/workflows.json
+data/*.xlsx
 *.log
 .DS_Store

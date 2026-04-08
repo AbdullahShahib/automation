@@ -257,26 +257,32 @@ Return ONLY a JSON array:
       return { emailSent: true, simulated: true };
     }
 
-    const transporter = nodemailer.createTransport({
-      host: emailConfig.host || 'smtp.gmail.com',
-      port: emailConfig.port || 587,
-      secure: false,
-      auth: { user: emailConfig.user, pass: emailConfig.pass }
-    });
+    try {
+      const transporter = nodemailer.createTransport({
+        host: emailConfig.host || 'smtp.gmail.com',
+        port: emailConfig.port || 587,
+        secure: false,
+        auth: { user: emailConfig.user, pass: emailConfig.pass }
+      });
 
-    const to = resolve(config.to, data) || data.email || data.lead?.email;
-    const subject = resolve(config.subject, data) || `Message from ${settings.agencyName}`;
-    let body = resolve(config.body, data) || data.ai_reply || '';
+      const to = resolve(config.to, data) || data.email || data.lead?.email;
+      const subject = resolve(config.subject, data) || `Message from ${settings.agencyName}`;
+      const body = resolve(config.body, data) || data.ai_reply || '';
 
-    await transporter.sendMail({
-      from: `"${settings.founderName} – ${settings.agencyName}" <${emailConfig.user}>`,
-      to, subject,
-      text: body,
-      html: `<div style="font-family:sans-serif;max-width:600px;line-height:1.6">${body.replace(/\n/g,'<br>')}</div>`
-    });
+      await transporter.sendMail({
+        from: `"${settings.founderName} – ${settings.agencyName}" <${emailConfig.user}>`,
+        to, subject,
+        text: body,
+        html: `<div style="font-family:sans-serif;max-width:600px;line-height:1.6">${body.replace(/\n/g,'<br>')}</div>`
+      });
 
-    ctx.log(`Email sent to: ${to}`);
-    return { emailSent: true, emailTo: to };
+      ctx.log(`Email sent to: ${to}`);
+      return { emailSent: true, emailTo: to };
+    } catch (e) {
+      const to = resolve(config.to, data) || data.email || data.lead?.email;
+      ctx.log(`⚠ Email send failed (${e.message}). Continuing in simulated mode for: ${to}`);
+      return { emailSent: false, simulated: true, emailTo: to, emailError: e.message };
+    }
   },
 
   // ─── WHATSAPP NODES ──────────────────────────────────────────
