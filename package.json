@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
-    "setup": "node scripts/setup.js"
+    "setup": "node scripts/setup.js",
+    "verify:sheets": "node scripts/verify-google-sheets.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
