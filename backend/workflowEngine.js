@@ -8,9 +8,11 @@ const path = require('path');
 const cron = require('node-cron');
 const { log } = require('./logger');
 
-const WORKFLOWS_FILE = path.join(__dirname, '../data/workflows.json');
-const EXECUTIONS_FILE = path.join(__dirname, '../data/executions.json');
-const LEADS_FILE = path.join(__dirname, '../data/leads.json');
+const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const DATA_DIR = process.env.DATA_DIR || (isServerless ? '/tmp/agencyflow' : path.join(__dirname, '../data'));
+const WORKFLOWS_FILE = path.join(DATA_DIR, 'workflows.json');
+const EXECUTIONS_FILE = path.join(DATA_DIR, 'executions.json');
+const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 
 // Load node handlers
 const nodeHandlers = require('./nodes');
@@ -22,11 +24,14 @@ class WorkflowEngine {
   }
 
   ensureDataFiles() {
-    const dataDir = path.join(__dirname, '../data');
-    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-    if (!fs.existsSync(WORKFLOWS_FILE)) fs.writeFileSync(WORKFLOWS_FILE, JSON.stringify(this.getDefaultWorkflows(), null, 2));
-    if (!fs.existsSync(EXECUTIONS_FILE)) fs.writeFileSync(EXECUTIONS_FILE, '[]');
-    if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, '[]');
+    try {
+      if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+      if (!fs.existsSync(WORKFLOWS_FILE)) fs.writeFileSync(WORKFLOWS_FILE, JSON.stringify(this.getDefaultWorkflows(), null, 2));
+      if (!fs.existsSync(EXECUTIONS_FILE)) fs.writeFileSync(EXECUTIONS_FILE, '[]');
+      if (!fs.existsSync(LEADS_FILE)) fs.writeFileSync(LEADS_FILE, '[]');
+    } catch (e) {
+      log('warn', `Data file init fallback: ${e.message}`);
+    }
   }
 
   // ─── WORKFLOW CRUD ────────────────────────────────────────────

@@ -536,8 +536,11 @@ Return ONLY a JSON array:
 // Config helpers
 function getSettings() {
   try {
-    const fs = require('fs'), path = require('path');
-    const f = path.join(__dirname, '../data/settings.json');
+    const fs = require('fs');
+    const path = require('path');
+    const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    const dataDir = process.env.DATA_DIR || (isServerless ? '/tmp/agencyflow' : path.join(__dirname, '../data'));
+    const f = path.join(dataDir, 'settings.json');
     return JSON.parse(fs.readFileSync(f, 'utf8'));
   } catch {
     return {

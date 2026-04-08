@@ -9,7 +9,10 @@ const path = require('path');
 const engine = require('./workflowEngine');
 const { log } = require('./logger');
 
-const SETTINGS_FILE = path.join(__dirname, '../data/settings.json');
+const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+const DATA_DIR = process.env.DATA_DIR || (isServerless ? '/tmp/agencyflow' : path.join(__dirname, '../data'));
+const SETTINGS_FILE = path.join(DATA_DIR, 'settings.json');
+const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 
 // ─── WORKFLOWS ────────────────────────────────────────────────
 router.get('/workflows', (req, res) => {
@@ -97,7 +100,8 @@ router.patch('/leads/:id', (req, res) => {
   if (idx < 0) return res.status(404).json({ error: 'Not found' });
   const fs2 = require('fs');
   leads[idx] = { ...leads[idx], ...req.body, updatedAt: new Date().toISOString() };
-  fs2.writeFileSync(path.join(__dirname, '../data/leads.json'), JSON.stringify(leads, null, 2));
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs2.writeFileSync(LEADS_FILE, JSON.stringify(leads, null, 2));
   global.broadcast('lead_updated', leads[idx]);
   res.json(leads[idx]);
 });
@@ -106,7 +110,8 @@ router.delete('/leads/:id', (req, res) => {
   const leads = engine.getLeads();
   const nextLeads = leads.filter(l => l.id !== req.params.id);
   if (nextLeads.length === leads.length) return res.status(404).json({ error: 'Not found' });
-  fs.writeFileSync(path.join(__dirname, '../data/leads.json'), JSON.stringify(nextLeads, null, 2));
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(LEADS_FILE, JSON.stringify(nextLeads, null, 2));
   global.broadcast('lead_updated', { deletedId: req.params.id });
   res.json({ success: true });
 });
@@ -118,6 +123,7 @@ router.get('/settings', (req, res) => {
 });
 
 router.post('/settings', (req, res) => {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify(req.body, null, 2));
   res.json({ success: true });
 });
