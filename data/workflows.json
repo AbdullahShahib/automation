@@ -1,0 +1,474 @@
+[
+  {
+    "id": "wf_contact_form",
+    "name": "🌐 Contact Form Auto-Reply",
+    "description": "When someone fills your portfolio contact form → save lead → send instant reply email → notify you on WhatsApp",
+    "active": true,
+    "color": "#7c5cfc",
+    "category": "leads",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_webhook",
+        "label": "Contact Form Submitted",
+        "config": {
+          "source": "contact_form"
+        },
+        "x": 60,
+        "y": 200
+      },
+      {
+        "id": "n2",
+        "type": "action_save_lead",
+        "label": "Save Lead to CRM",
+        "config": {
+          "fields": [
+            "name",
+            "email",
+            "phone",
+            "message",
+            "budget"
+          ]
+        },
+        "x": 320,
+        "y": 200
+      },
+      {
+        "id": "n3",
+        "type": "action_ai_generate",
+        "label": "Generate Reply with AI",
+        "config": {
+          "template": "contact_reply",
+          "tone": "friendly"
+        },
+        "x": 580,
+        "y": 200
+      },
+      {
+        "id": "n4",
+        "type": "action_send_email",
+        "label": "Send Auto-Reply Email",
+        "config": {
+          "to": "{{data.email}}",
+          "subject": "Thanks for reaching out!",
+          "body": "{{data.ai_reply}}"
+        },
+        "x": 840,
+        "y": 200
+      },
+      {
+        "id": "n5",
+        "type": "action_sheets_append",
+        "label": "Add to Google Sheet",
+        "config": {
+          "sheetId": "YOUR_SHEET_ID",
+          "range": "Leads!A:Z"
+        },
+        "x": 840,
+        "y": 340
+      },
+      {
+        "id": "n6",
+        "type": "action_notify",
+        "label": "Notify Me (WhatsApp/Slack)",
+        "config": {
+          "message": "🔔 New lead: {{data.name}} ({{data.email}}) Budget: {{data.budget}}"
+        },
+        "x": 580,
+        "y": 340
+      }
+    ],
+    "connections": [
+      {
+        "from": "n1",
+        "to": "n2"
+      },
+      {
+        "from": "n2",
+        "to": "n3"
+      },
+      {
+        "from": "n3",
+        "to": "n4"
+      },
+      {
+        "from": "n2",
+        "to": "n5"
+      },
+      {
+        "from": "n2",
+        "to": "n6"
+      }
+    ]
+  },
+  {
+    "id": "wf_whatsapp_reply",
+    "name": "💬 WhatsApp Auto-Responder",
+    "description": "Incoming WhatsApp message → AI qualifies lead → sends smart reply → logs to CRM",
+    "active": true,
+    "color": "#00e5b0",
+    "category": "messaging",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_webhook",
+        "label": "WhatsApp Message Received",
+        "config": {
+          "source": "whatsapp"
+        },
+        "x": 60,
+        "y": 200
+      },
+      {
+        "id": "n2",
+        "type": "action_ai_qualify",
+        "label": "AI Lead Qualifier",
+        "config": {
+          "budgetKey": "data.message"
+        },
+        "x": 320,
+        "y": 200
+      },
+      {
+        "id": "n3",
+        "type": "action_condition",
+        "label": "Budget Check",
+        "config": {
+          "condition": "data.qualified === true"
+        },
+        "x": 580,
+        "y": 200
+      },
+      {
+        "id": "n4",
+        "type": "action_ai_generate",
+        "label": "Generate Premium Reply",
+        "config": {
+          "template": "whatsapp_premium",
+          "tone": "professional"
+        },
+        "x": 840,
+        "y": 120
+      },
+      {
+        "id": "n5",
+        "type": "action_ai_generate",
+        "label": "Generate Basic Reply",
+        "config": {
+          "template": "whatsapp_basic",
+          "tone": "friendly"
+        },
+        "x": 840,
+        "y": 280
+      },
+      {
+        "id": "n6",
+        "type": "action_whatsapp_reply",
+        "label": "Send WhatsApp Reply",
+        "config": {
+          "to": "{{data.from}}",
+          "message": "{{data.ai_reply}}"
+        },
+        "x": 1100,
+        "y": 200
+      },
+      {
+        "id": "n7",
+        "type": "action_save_lead",
+        "label": "Save to CRM",
+        "config": {},
+        "x": 1100,
+        "y": 340
+      }
+    ],
+    "connections": [
+      {
+        "from": "n1",
+        "to": "n2"
+      },
+      {
+        "from": "n2",
+        "to": "n3"
+      },
+      {
+        "from": "n3",
+        "to": "n4",
+        "condition": "data.qualified === true"
+      },
+      {
+        "from": "n3",
+        "to": "n5",
+        "condition": "data.qualified !== true"
+      },
+      {
+        "from": "n4",
+        "to": "n6"
+      },
+      {
+        "from": "n5",
+        "to": "n6"
+      },
+      {
+        "from": "n6",
+        "to": "n7"
+      }
+    ]
+  },
+  {
+    "id": "wf_daily_prospecting",
+    "name": "🎯 Daily Lead Prospector",
+    "description": "Every morning: AI finds 10 new leads in your target niche → generates cold emails → queues them for sending",
+    "active": false,
+    "color": "#f5c842",
+    "category": "prospecting",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_schedule",
+        "label": "Every Morning 9AM",
+        "config": {
+          "cron": "0 9 * * *",
+          "label": "Daily 9:00 AM"
+        },
+        "x": 60,
+        "y": 200
+      },
+      {
+        "id": "n2",
+        "type": "action_ai_prospect",
+        "label": "AI Find Leads",
+        "config": {
+          "niche": "restaurants",
+          "location": "Mumbai",
+          "count": 10
+        },
+        "x": 320,
+        "y": 200
+      },
+      {
+        "id": "n3",
+        "type": "action_ai_generate",
+        "label": "Generate Cold Emails",
+        "config": {
+          "template": "cold_email",
+          "bulk": true
+        },
+        "x": 580,
+        "y": 200
+      },
+      {
+        "id": "n4",
+        "type": "action_sheets_append",
+        "label": "Log to Sheet",
+        "config": {
+          "sheetId": "YOUR_SHEET_ID",
+          "range": "Prospects!A:Z"
+        },
+        "x": 840,
+        "y": 200
+      },
+      {
+        "id": "n5",
+        "type": "action_notify",
+        "label": "Send Me Daily Summary",
+        "config": {
+          "message": "📊 Found {{data.count}} new leads today in {{data.niche}}"
+        },
+        "x": 840,
+        "y": 340
+      }
+    ],
+    "connections": [
+      {
+        "from": "n1",
+        "to": "n2"
+      },
+      {
+        "from": "n2",
+        "to": "n3"
+      },
+      {
+        "from": "n3",
+        "to": "n4"
+      },
+      {
+        "from": "n4",
+        "to": "n5"
+      }
+    ]
+  },
+  {
+    "id": "wf_cold_outreach",
+    "name": "📧 Cold Email Outreach Campaign",
+    "description": "Manually triggered: for each lead in sheet → generate personalized email → send → update status",
+    "active": true,
+    "color": "#ff6b6b",
+    "category": "outreach",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_manual",
+        "label": "Manual / Webhook Trigger",
+        "config": {
+          "source": "outreach"
+        },
+        "x": 60,
+        "y": 200
+      },
+      {
+        "id": "n2",
+        "type": "action_sheets_read",
+        "label": "Read Leads from Sheet",
+        "config": {
+          "sheetId": "YOUR_SHEET_ID",
+          "range": "Leads!A:Z",
+          "filter": "status=New"
+        },
+        "x": 320,
+        "y": 200
+      },
+      {
+        "id": "n3",
+        "type": "action_ai_generate",
+        "label": "AI: Personalized Email",
+        "config": {
+          "template": "cold_email_personalized"
+        },
+        "x": 580,
+        "y": 200
+      },
+      {
+        "id": "n4",
+        "type": "action_ai_generate",
+        "label": "AI: Cold Call Summary",
+        "config": {
+          "template": "call_script"
+        },
+        "x": 580,
+        "y": 340
+      },
+      {
+        "id": "n5",
+        "type": "action_send_email",
+        "label": "Send Cold Email",
+        "config": {
+          "delay": 2000
+        },
+        "x": 840,
+        "y": 200
+      },
+      {
+        "id": "n6",
+        "type": "action_sheets_update",
+        "label": "Update Status: Contacted",
+        "config": {
+          "statusCol": "I",
+          "value": "Contacted"
+        },
+        "x": 840,
+        "y": 340
+      }
+    ],
+    "connections": [
+      {
+        "from": "n1",
+        "to": "n2"
+      },
+      {
+        "from": "n2",
+        "to": "n3"
+      },
+      {
+        "from": "n2",
+        "to": "n4"
+      },
+      {
+        "from": "n3",
+        "to": "n5"
+      },
+      {
+        "from": "n5",
+        "to": "n6"
+      }
+    ]
+  },
+  {
+    "id": "wf_follow_up",
+    "name": "🔄 Follow-Up Sequence",
+    "description": "Every Monday: check leads not replied in 5 days → send follow-up → update sheet",
+    "active": false,
+    "color": "#a78bfa",
+    "category": "outreach",
+    "nodes": [
+      {
+        "id": "n1",
+        "type": "trigger_schedule",
+        "label": "Every Monday 10AM",
+        "config": {
+          "cron": "0 10 * * 1",
+          "label": "Weekly Monday"
+        },
+        "x": 60,
+        "y": 200
+      },
+      {
+        "id": "n2",
+        "type": "action_sheets_read",
+        "label": "Get Stale Leads",
+        "config": {
+          "sheetId": "YOUR_SHEET_ID",
+          "filter": "status=Contacted&days>5"
+        },
+        "x": 320,
+        "y": 200
+      },
+      {
+        "id": "n3",
+        "type": "action_ai_generate",
+        "label": "AI Follow-Up Email",
+        "config": {
+          "template": "followup"
+        },
+        "x": 580,
+        "y": 200
+      },
+      {
+        "id": "n4",
+        "type": "action_send_email",
+        "label": "Send Follow-Up",
+        "config": {},
+        "x": 840,
+        "y": 200
+      },
+      {
+        "id": "n5",
+        "type": "action_sheets_update",
+        "label": "Mark Followed Up",
+        "config": {
+          "statusCol": "I",
+          "value": "Followed Up"
+        },
+        "x": 840,
+        "y": 340
+      }
+    ],
+    "connections": [
+      {
+        "from": "n1",
+        "to": "n2"
+      },
+      {
+        "from": "n2",
+        "to": "n3"
+      },
+      {
+        "from": "n3",
+        "to": "n4"
+      },
+      {
+        "from": "n4",
+        "to": "n5"
+      }
+    ]
+  }
+]

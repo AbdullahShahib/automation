@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgencyFlow — Automation Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --surface: #111118;
+  --card: #18181f;
+  --card2: #1f1f2a;
+  --border: #272736;
+  --border2: #32324a;
+  --accent: #7c5cfc;
+  --accent-glow: rgba(124,92,252,0.25);
+  --green: #00e5b0;
+  --yellow: #f5c842;
+  --red: #ff6b6b;
+  --purple: #a78bfa;
+  --text: #e4e4f0;
+  --muted: #6b6b8a;
+  --muted2: #4a4a64;
+  --node-trigger: #7c5cfc;
+  --node-ai: #a78bfa;
+  --node-comms: #00e5b0;
+  --node-data: #f5c842;
+  --node-logic: #ff6b6b;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; overflow:hidden; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; display:flex; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:220px; min-width:220px; background:var(--surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; z-index:10;
+}
+.sidebar-logo {
+  padding:1.2rem 1.2rem 0.8rem;
+  font-family:'Syne',sans-serif; font-weight:800; font-size:1.15rem;
+  border-bottom:1px solid var(--border);
+}
+.sidebar-logo span { color:var(--accent); }
+.sidebar-logo sub { font-size:0.55rem; color:var(--green); background:rgba(0,229,176,0.1); border:1px solid rgba(0,229,176,0.2); padding:1px 6px; border-radius:10px; vertical-align:middle; margin-left:6px; }
+.nav-section { padding:1rem 0.8rem 0.3rem; font-size:0.62rem; text-transform:uppercase; letter-spacing:0.1em; color:var(--muted2); font-family:'DM Mono',monospace; }
+.nav-item {
+  display:flex; align-items:center; gap:10px; padding:0.6rem 1.2rem;
+  cursor:pointer; transition:all 0.15s; font-size:0.85rem; color:var(--muted);
+  border-left:2px solid transparent; text-decoration:none;
+}
+.nav-item:hover { color:var(--text); background:rgba(255,255,255,0.03); }
+.nav-item.active { color:var(--text); background:rgba(124,92,252,0.08); border-left-color:var(--accent); }
+.nav-item .icon { font-size:1rem; width:18px; text-align:center; }
+.nav-badge { margin-left:auto; font-family:'DM Mono',monospace; font-size:0.65rem; background:var(--card2); border:1px solid var(--border2); padding:1px 6px; border-radius:10px; color:var(--muted); }
+.nav-badge.live { background:rgba(0,229,176,0.1); border-color:rgba(0,229,176,0.3); color:var(--green); }
+.sidebar-footer { margin-top:auto; padding:1rem; border-top:1px solid var(--border); }
+.conn-status { font-size:0.72rem; color:var(--muted); display:flex; align-items:center; gap:6px; }
+.conn-dot { width:7px; height:7px; border-radius:50%; background:var(--muted2); }
+.conn-dot.live { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 2s infinite; }
+@keyframes pulse { 50% { opacity:0.4; } }
+
+/* ── MAIN AREA ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar {
+  height:52px; min-height:52px; background:var(--surface); border-bottom:1px solid var(--border);
+  display:flex; align-items:center; gap:12px; padding:0 1.5rem;
+}
+.topbar-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.95rem; }
+.topbar-actions { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.content { flex:1; overflow:hidden; position:relative; }
+.panel { display:none; height:100%; overflow-y:auto; }
+.panel.active { display:flex; flex-direction:column; }
+
+/* ── BUTTONS ── */
+.btn { display:inline-flex; align-items:center; gap:6px; padding:0.45rem 1rem; border-radius:8px; font-family:'Syne',sans-serif; font-weight:700; font-size:0.78rem; cursor:pointer; border:none; transition:all 0.18s; letter-spacing:0.02em; }
+.btn-primary { background:var(--accent); color:white; }
+.btn-primary:hover { background:#9070ff; box-shadow:0 4px 16px var(--accent-glow); }
+.btn-ghost { background:transparent; color:var(--muted); border:1px solid var(--border2); }
+.btn-ghost:hover { color:var(--text); border-color:var(--accent); }
+.btn-green { background:rgba(0,229,176,0.12); color:var(--green); border:1px solid rgba(0,229,176,0.25); }
+.btn-green:hover { background:rgba(0,229,176,0.22); }
+.btn-red { background:rgba(255,107,107,0.12); color:var(--red); border:1px solid rgba(255,107,107,0.25); padding:0.35rem 0.7rem; font-size:0.72rem; }
+.btn-yellow { background:rgba(245,200,66,0.12); color:var(--yellow); border:1px solid rgba(245,200,66,0.25); }
+.btn-sm { padding:0.3rem 0.7rem; font-size:0.72rem; }
+
+/* ── CARDS ── */
+.card { background:var(--card); border:1px solid var(--border); border-radius:14px; }
+.card2 { background:var(--card2); border:1px solid var(--border2); border-radius:12px; }
+input, select, textarea {
+  background:var(--surface); border:1px solid var(--border2); border-radius:8px;
+  padding:0.5rem 0.8rem; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.85rem; outline:none; transition:border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color:var(--accent); }
+select option { background:var(--card); }
+label { font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; display:block; margin-bottom:4px; margin-top:10px; }
+
+/* ─────────────────────────────────────────────────────────────
+   DASHBOARD PANEL
+───────────────────────────────────────────────────────────── */
+#panel-dashboard { padding:1.5rem; gap:1.2rem; }
+.stats-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; }
+.stat-card {
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:1.1rem 1.2rem; cursor:default;
+}
+.stat-card:hover { border-color:var(--border2); }
+.stat-label { font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; font-family:'DM Mono',monospace; }
+.stat-num { font-family:'Syne',sans-serif; font-weight:800; font-size:2rem; margin-top:4px; }
+.stat-sub { font-size:0.72rem; color:var(--muted); margin-top:2px; }
+.dash-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+.section-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; margin-bottom:0.8rem; display:flex; align-items:center; gap:8px; }
+.section-title::before { content:''; width:3px; height:14px; background:var(--accent); border-radius:2px; display:block; }
+.wf-mini { display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto; }
+.wf-mini-item {
+  display:flex; align-items:center; gap:10px; padding:0.6rem 0.9rem;
+  background:var(--card2); border:1px solid var(--border); border-radius:10px; cursor:pointer; transition:all 0.15s;
+}
+.wf-mini-item:hover { border-color:var(--border2); background:var(--card); }
+.wf-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.wf-name { font-size:0.82rem; font-weight:500; flex:1; }
+.wf-cat { font-size:0.68rem; color:var(--muted); font-family:'DM Mono',monospace; }
+.toggle { width:36px; height:20px; background:var(--border); border-radius:10px; position:relative; cursor:pointer; transition:background 0.2s; flex-shrink:0; }
+.toggle.on { background:var(--green); }
+.toggle::after { content:''; width:14px; height:14px; background:white; border-radius:50%; position:absolute; top:3px; left:3px; transition:left 0.2s; }
+.toggle.on::after { left:19px; }
+.exec-list { display:flex; flex-direction:column; gap:6px; max-height:280px; overflow-y:auto; }
+.exec-item { display:flex; align-items:center; gap:8px; padding:0.55rem 0.9rem; background:var(--card2); border-radius:8px; font-size:0.78rem; }
+.exec-status { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.exec-status.success { background:var(--green); }
+.exec-status.error { background:var(--red); }
+.exec-status.running { background:var(--yellow); animation:pulse 1s infinite; }
+.exec-name { flex:1; }
+.exec-time { color:var(--muted); font-family:'DM Mono',monospace; font-size:0.68rem; }
+
+/* ─────────────────────────────────────────────────────────────
+   WORKFLOW BUILDER PANEL
+───────────────────────────────────────────────────────────── */
+#panel-builder { flex-direction:row; padding:0; overflow:hidden; }
+.builder-sidebar {
+  width:260px; min-width:260px; background:var(--surface); border-right:1px solid var(--border);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.builder-sidebar-tabs { display:flex; border-bottom:1px solid var(--border); }
+.builder-stab { flex:1; padding:0.65rem; text-align:center; font-size:0.72rem; font-family:'DM Mono',monospace; cursor:pointer; color:var(--muted); transition:all 0.15s; }
+.builder-stab.active { color:var(--text); background:var(--card); }
+.builder-stab:hover { color:var(--text); }
+.node-palette { padding:0.8rem; overflow-y:auto; flex:1; }
+.palette-category { font-size:0.62rem; color:var(--muted2); text-transform:uppercase; letter-spacing:0.08em; font-family:'DM Mono',monospace; margin:10px 0 6px; }
+.palette-category:first-child { margin-top:0; }
+.palette-node {
+  display:flex; align-items:center; gap:8px; padding:0.5rem 0.7rem;
+  background:var(--card); border:1px solid var(--border); border-radius:8px;
+  cursor:grab; margin-bottom:5px; transition:all 0.15s; user-select:none;
+}
+.palette-node:hover { border-color:var(--border2); transform:translateX(2px); }
+.palette-node:active { cursor:grabbing; }
+.palette-icon { font-size:0.9rem; width:20px; text-align:center; }
+.palette-info { flex:1; }
+.palette-name { font-size:0.78rem; font-weight:500; }
+.palette-desc { font-size:0.65rem; color:var(--muted); line-height:1.3; }
+/* Canvas */
+.canvas-area { flex:1; position:relative; overflow:hidden; }
+#workflow-canvas {
+  position:absolute; top:0; left:0;
+  background-image:
+    radial-gradient(circle, #272736 1px, transparent 1px);
+  background-size:28px 28px;
+}
+.canvas-toolbar {
+  position:absolute; top:10px; left:50%; transform:translateX(-50%);
+  display:flex; gap:6px; background:var(--card); border:1px solid var(--border); border-radius:12px; padding:6px;
+  z-index:5;
+}
+.canvas-toolbar select { width:180px; font-size:0.78rem; padding:0.3rem 0.6rem; }
+/* Nodes on canvas */
+.canvas-node {
+  position:absolute; background:var(--card2); border:1.5px solid var(--border2);
+  border-radius:12px; min-width:160px; cursor:pointer; user-select:none;
+  transition:box-shadow 0.15s, border-color 0.15s;
+  z-index:2;
+}
+.canvas-node:hover { border-color:var(--border2); box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+.canvas-node.selected { border-color:var(--accent) !important; box-shadow:0 0 0 3px var(--accent-glow); }
+.canvas-node.running { border-color:var(--yellow) !important; box-shadow:0 0 12px rgba(245,200,66,0.4); }
+.canvas-node.done { border-color:var(--green) !important; }
+.canvas-node.error { border-color:var(--red) !important; }
+.node-header { padding:0.5rem 0.7rem; border-radius:10px 10px 0 0; display:flex; align-items:center; gap:7px; }
+.node-icon { font-size:0.9rem; }
+.node-label { font-size:0.78rem; font-weight:600; font-family:'Syne',sans-serif; flex:1; }
+.node-body { padding:0.4rem 0.7rem 0.6rem; font-size:0.68rem; color:var(--muted); border-top:1px solid var(--border); }
+.node-port { position:absolute; width:12px; height:12px; background:var(--card); border:2px solid var(--border2); border-radius:50%; cursor:crosshair; transition:all 0.15s; z-index:3; }
+.node-port:hover { background:var(--accent); border-color:var(--accent); transform:scale(1.3); }
+.node-port.in { left:-6px; top:50%; transform:translateY(-50%); }
+.node-port.out { right:-6px; top:50%; transform:translateY(-50%); }
+.node-port.in:hover { transform:translateY(-50%) scale(1.3); }
+/* SVG connections */
+#connections-svg { position:absolute; top:0; left:0; pointer-events:none; z-index:1; }
+.connection-path { fill:none; stroke:var(--border2); stroke-width:2; transition:stroke 0.2s; }
+.connection-path:hover { stroke:var(--accent); }
+.connection-path.active { stroke:var(--accent); stroke-dasharray:5,3; animation:dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset:-16; } }
+/* Config panel */
+.node-config-panel {
+  width:260px; min-width:260px; background:var(--surface); border-left:1px solid var(--border);
+  padding:1rem; overflow-y:auto; display:none;
+}
+.node-config-panel.open { display:block; }
+.config-title { font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem; margin-bottom:1rem; }
+.config-field { margin-bottom:0.8rem; }
+.config-field input, .config-field select, .config-field textarea {
+  width:100%; font-size:0.8rem;
+}
+.config-field textarea { min-height:80px; resize:vertical; font-size:0.75rem; font-family:'DM Mono',monospace; }
+
+/* ─────────────────────────────────────────────────────────────
+   WORKFLOWS LIST PANEL
+───────────────────────────────────────────────────────────── */
+#panel-workflows { padding:1.5rem; gap:1.2rem; }
+.wf-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:14px; }
+.wf-card {
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:1.2rem; cursor:pointer; transition:all 0.2s; position:relative; overflow:hidden;
+}
+.wf-card:hover { transform:translateY(-2px); box-shadow:0 8px 30px rgba(0,0,0,0.3); border-color:var(--border2); }
+.wf-card-accent { position:absolute; top:0; left:0; right:0; height:3px; }
+.wf-card-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; }
+.wf-card-name { font-family:'Syne',sans-serif; font-weight:700; font-size:0.95rem; flex:1; }
+.wf-card-desc { font-size:0.77rem; color:var(--muted); line-height:1.5; margin-bottom:10px; }
+.wf-card-meta { display:flex; gap:8px; align-items:center; }
+.tag { font-size:0.66rem; padding:2px 8px; border-radius:20px; font-family:'DM Mono',monospace; background:var(--card2); border:1px solid var(--border2); color:var(--muted); }
+.wf-card-actions { display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid var(--border); }
+
+/* ─────────────────────────────────────────────────────────────
+   CRM PANEL
+───────────────────────────────────────────────────────────── */
+#panel-crm { padding:1.5rem; gap:1rem; }
+.crm-toolbar { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.search-wrap { position:relative; flex:1; min-width:200px; }
+.search-wrap input { width:100%; padding-left:2rem; }
+.search-wrap::before { content:'🔍'; position:absolute; left:0.6rem; top:50%; transform:translateY(-50%); font-size:0.78rem; pointer-events:none; }
+.table-wrap { border-radius:12px; border:1px solid var(--border); overflow:auto; flex:1; }
+table { width:100%; border-collapse:collapse; font-size:0.8rem; }
+thead th { background:var(--surface); padding:0.65rem 1rem; text-align:left; font-family:'DM Mono',monospace; font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; border-bottom:1px solid var(--border); white-space:nowrap; }
+tbody tr { border-bottom:1px solid rgba(39,39,54,0.7); transition:background 0.1s; }
+tbody tr:hover { background:rgba(124,92,252,0.04); }
+tbody tr:last-child { border-bottom:none; }
+tbody td { padding:0.6rem 1rem; vertical-align:middle; }
+.status-pill { display:inline-flex; align-items:center; gap:4px; font-size:0.66rem; padding:2px 9px; border-radius:20px; font-weight:500; white-space:nowrap; }
+.s-new { background:rgba(124,92,252,0.12); color:#a78bfa; }
+.s-contacted { background:rgba(245,200,66,0.12); color:var(--yellow); }
+.s-interested { background:rgba(0,229,176,0.12); color:var(--green); }
+.s-closed { background:rgba(0,229,176,0.2); color:var(--green); border:1px solid rgba(0,229,176,0.3); }
+.s-lost { background:rgba(255,107,107,0.1); color:var(--red); }
+.score-pip { font-family:'DM Mono',monospace; font-size:0.7rem; padding:2px 7px; border-radius:20px; }
+.sp-h { background:rgba(0,229,176,0.1); color:var(--green); }
+.sp-m { background:rgba(245,200,66,0.1); color:var(--yellow); }
+.sp-l { background:rgba(255,107,107,0.1); color:var(--red); }
+
+/* ─────────────────────────────────────────────────────────────
+   LOGS PANEL
+───────────────────────────────────────────────────────────── */
+#panel-logs { padding:1.5rem; gap:1rem; }
+.log-stream {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  font-family:'DM Mono',monospace; font-size:0.75rem; padding:1rem;
+  overflow-y:auto; flex:1; line-height:1.8;
+}
+.log-stream::-webkit-scrollbar { width:4px; }
+.log-stream::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+.log-line { display:flex; gap:10px; border-bottom:1px solid rgba(39,39,54,0.4); padding:2px 0; }
+.log-ts { color:var(--muted2); flex-shrink:0; }
+.log-lvl { flex-shrink:0; width:45px; }
+.log-lvl.info { color:var(--green); }
+.log-lvl.warn { color:var(--yellow); }
+.log-lvl.error { color:var(--red); }
+.log-msg { color:var(--text); }
+
+/* ─────────────────────────────────────────────────────────────
+   SETTINGS PANEL
+───────────────────────────────────────────────────────────── */
+#panel-settings { padding:1.5rem; gap:1.2rem; }
+.settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.2rem; }
+.settings-card { padding:1.4rem; }
+.integration-item { display:flex; align-items:center; gap:10px; padding:0.7rem; background:var(--card2); border:1px solid var(--border); border-radius:10px; margin-bottom:8px; }
+.integration-icon { font-size:1.2rem; width:32px; text-align:center; }
+.integration-name { font-weight:500; font-size:0.85rem; }
+.integration-status { margin-left:auto; font-size:0.68rem; }
+.integration-status.ok { color:var(--green); }
+.integration-status.missing { color:var(--muted); }
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL
+───────────────────────────────────────────────────────── */
+.modal-overlay { position:fixed; inset:0; background:rgba(9,9,15,0.85); backdrop-filter:blur(6px); z-index:50; display:none; align-items:center; justify-content:center; padding:1.5rem; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--card); border:1px solid var(--border2); border-radius:18px; width:100%; max-width:540px; max-height:88vh; overflow-y:auto; padding:1.8rem; position:relative; animation:modalIn 0.25s cubic-bezier(0.34,1.4,0.64,1); }
+@keyframes modalIn { from { opacity:0; transform:scale(0.92) translateY(16px); } to { opacity:1; transform:none; } }
+.modal-x { position:absolute; top:1rem; right:1rem; background:var(--card2); border:1px solid var(--border); border-radius:7px; width:28px; height:28px; cursor:pointer; color:var(--muted); font-size:0.9rem; display:flex; align-items:center; justify-content:center; transition:all 0.15s; }
+.modal-x:hover { color:var(--text); border-color:var(--accent); }
+.modal-title { font-family:'Syne',sans-serif; font-weight:800; font-size:1.2rem; margin-bottom:0.3rem; }
+.modal-sub { color:var(--muted); font-size:0.8rem; margin-bottom:1.2rem; }
+
+/* ─────────────────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────────────── */
+.toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--card); border:1px solid var(--green); border-radius:12px; padding:0.7rem 1.1rem; font-size:0.8rem; z-index:100; transform:translateY(80px); opacity:0; transition:all 0.3s cubic-bezier(0.34,1.4,0.64,1); display:flex; align-items:center; gap:8px; box-shadow:0 8px 30px rgba(0,0,0,0.5); }
+.toast.show { transform:translateY(0); opacity:1; }
+
+/* ─────────────────────────────────────────────────────────────
+   MISC
+───────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+.empty { text-align:center; padding:3rem; color:var(--muted); }
+.empty-ico { font-size:2rem; margin-bottom:0.8rem; opacity:0.35; }
+.empty h3 { font-family:'Syne',sans-serif; font-size:0.95rem; color:var(--text); margin-bottom:0.3rem; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+.fade-in { animation:fadeIn 0.25s ease; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">Agency<span>Flow</span><sub>v1.0</sub></div>
+  <div class="nav-section">Main</div>
+  <a class="nav-item active" onclick="showPanel('dashboard',this)"><span class="icon">📊</span> Dashboard</a>
+  <a class="nav-item" onclick="showPanel('workflows',this)"><span class="icon">⚡</span> Workflows <span class="nav-badge" id="wfCount">0</span></a>
+  <a class="nav-item" onclick="showPanel('builder',this)"><span class="icon">🔧</span> Builder</a>
+  <div class="nav-section">Data</div>
+  <a class="nav-item" onclick="showPanel('crm',this)"><span class="icon">👥</span> CRM / Leads <span class="nav-badge live" id="leadsCount">0</span></a>
+  <a class="nav-item" onclick="showPanel('logs',this)"><span class="icon">📋</span> Logs</a>
+  <div class="nav-section">Config</div>
+  <a class="nav-item" onclick="showPanel('settings',this)"><span class="icon">⚙️</span> Settings</a>
+  <div class="sidebar-footer">
+    <div class="conn-status"><div class="conn-dot" id="connDot"></div><span id="connLabel">Connecting...</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-actions" id="topbarActions">
+      <button class="btn btn-primary" onclick="showNewWorkflowModal()">+ New Workflow</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="panel active fade-in" id="panel-dashboard">
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card"><div class="stat-label">Workflows</div><div class="stat-num" id="s-workflows" style="color:var(--accent)">–</div><div class="stat-sub">Total configured</div></div>
+        <div class="stat-card"><div class="stat-label">Active</div><div class="stat-num" id="s-active" style="color:var(--green)">–</div><div class="stat-sub">Running now</div></div>
+        <div class="stat-card"><div class="stat-label">Executions</div><div class="stat-num" id="s-execs" style="color:var(--yellow)">–</div><div class="stat-sub">All time</div></div>
+        <div class="stat-card"><div class="stat-label">Success Rate</div><div class="stat-num" id="s-success" style="color:var(--green)">–</div><div class="stat-sub">Last 100 runs</div></div>
+        <div class="stat-card"><div class="stat-label">Total Leads</div><div class="stat-num" id="s-leads" style="color:var(--purple)">–</div><div class="stat-sub">In CRM</div></div>
+        <div class="stat-card"><div class="stat-label">Closed</div><div class="stat-num" id="s-closed" style="color:var(--green)">–</div><div class="stat-sub">Won clients</div></div>
+      </div>
+      <div class="dash-grid">
+        <div class="card" style="padding:1.2rem">
+          <div class="section-title">Workflows</div>
+          <div class="wf-mini" id="dashWfList"></div>
+        </div>
+        <div class="card" style="padding:1.2rem">
+          <div class="section-title">Recent Executions</div>
+          <div class="exec-list" id="dashExecList"></div>
+        </div>
+      </div>
+      <!-- Webhook info -->
+      <div class="card" style="padding:1.2rem">
+        <div class="section-title">📡 Your Webhook URLs</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:4px">
+          <div class="card2" style="padding:0.8rem">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Contact Form</div>
+            <code style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--green)">POST /webhook/contact_form</code>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">Add to your portfolio's contact form action</div>
+          </div>
+          <div class="card2" style="padding:0.8rem">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Messaging (Telegram/Twilio)</div>
+            <code style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--green)">POST /webhook/whatsapp</code>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">Use for WhatsApp webhook source or message trigger</div>
+          </div>
+          <div class="card2" style="padding:0.8rem">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Manual Outreach</div>
+            <code style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--green)">POST /webhook/outreach</code>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">Trigger cold email campaign</div>
+          </div>
+          <div class="card2" style="padding:0.8rem">
+            <div style="font-size:0.7rem;color:var(--muted);margin-bottom:4px">Custom</div>
+            <code style="font-family:'DM Mono',monospace;font-size:0.75rem;color:var(--green)">POST /webhook/:your-source</code>
+            <div style="font-size:0.68rem;color:var(--muted);margin-top:4px">Any custom webhook source name</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- WORKFLOWS LIST -->
+    <div class="panel fade-in" id="panel-workflows">
+      <div style="padding:1.5rem;display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem">All Workflows</div>
+        <select id="wfCategoryFilter" onchange="renderWorkflows()" style="width:auto;font-size:0.78rem">
+          <option value="">All Categories</option>
+          <option value="leads">Leads</option>
+          <option value="messaging">Messaging</option>
+          <option value="prospecting">Prospecting</option>
+          <option value="outreach">Outreach</option>
+          <option value="custom">Custom</option>
+        </select>
+        <button class="btn btn-primary" style="margin-left:auto" onclick="showNewWorkflowModal()">+ New Workflow</button>
+      </div>
+      <div class="wf-grid" id="wfGrid" style="padding:0 1.5rem 1.5rem"></div>
+    </div>
+
+    <!-- BUILDER -->
+    <div class="panel" id="panel-builder">
+      <div class="builder-sidebar">
+        <div class="builder-sidebar-tabs">
+          <div class="builder-stab active" onclick="switchBuilderTab('nodes',this)">Nodes</div>
+          <div class="builder-stab" onclick="switchBuilderTab('props',this)">Properties</div>
+        </div>
+        <div id="btab-nodes" class="node-palette"></div>
+        <div id="btab-props" style="display:none;padding:0.8rem;overflow-y:auto;flex:1">
+          <div id="propsPanel" style="color:var(--muted);font-size:0.8rem">Select a node to edit its properties</div>
+        </div>
+      </div>
+
+      <div class="canvas-area" id="canvasArea">
+        <div class="canvas-toolbar">
+          <select id="canvasWorkflowSelect" onchange="loadWorkflowToCanvas(this.value)" style="font-size:0.78rem"></select>
+          <button class="btn btn-ghost btn-sm" onclick="zoomCanvas(-0.1)">−</button>
+          <button class="btn btn-ghost btn-sm" onclick="zoomCanvas(0.1)">+</button>
+          <button class="btn btn-ghost btn-sm" onclick="fitCanvas()">Fit</button>
+          <button class="btn btn-green btn-sm" onclick="runCurrentWorkflow()">▶ Run</button>
+          <button class="btn btn-primary btn-sm" onclick="saveCurrentWorkflow()">💾 Save</button>
+        </div>
+        <canvas id="workflow-canvas"></canvas>
+        <svg id="connections-svg"></svg>
+        <div id="nodes-layer" style="position:absolute;top:0;left:0;transform-origin:0 0"></div>
+      </div>
+    </div>
+
+    <!-- CRM -->
+    <div class="panel fade-in" id="panel-crm">
+      <div style="padding:1.2rem 1.5rem 0">
+        <div class="crm-toolbar">
+          <div class="search-wrap"><input type="text" id="crmSearch" placeholder="Search leads..." oninput="renderCRM()"></div>
+          <select onchange="crmFilterStatus=this.value;renderCRM()" style="width:auto">
+            <option value="">All Status</option>
+            <option>New</option><option>Contacted</option><option>Interested</option><option>Closed</option><option>Lost</option>
+          </select>
+          <button class="btn btn-green" onclick="exportLeadsCSV()">⬇ Export CSV</button>
+          <button class="btn btn-primary" onclick="showAddLeadModal()">+ Add Lead</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin:0 1.5rem 1.5rem">
+        <table>
+          <thead><tr>
+            <th>#</th><th>Business</th><th>Owner</th><th>Phone</th><th>Email</th>
+            <th>Needs</th><th>Budget</th><th>Status</th><th>Score</th><th>Source</th><th>Added</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="crmBody"></tbody>
+        </table>
+        <div class="empty" id="crmEmpty" style="display:none"><div class="empty-ico">👥</div><h3>No leads yet</h3><div>Activate a workflow or add manually</div></div>
+      </div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="panel fade-in" id="panel-logs">
+      <div style="padding:1.2rem 1.5rem 0;display:flex;gap:8px;align-items:center">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem">Live Execution Logs</div>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto" onclick="clearLogs()">Clear</button>
+        <button class="btn btn-ghost btn-sm" onclick="toggleAutoScroll()">Auto-scroll: <span id="autoScrollLbl">ON</span></button>
+      </div>
+      <div class="log-stream" id="logStream" style="margin:1rem 1.5rem 1.5rem">
+        <div style="color:var(--muted);font-size:0.75rem">Waiting for executions... Logs will appear here in real-time.</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel fade-in" id="panel-settings">
+      <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1.2rem">
+        <div class="settings-grid">
+          <div class="card settings-card">
+            <div class="section-title">Agency Details</div>
+            <label>Agency Name</label><input type="text" id="sAgencyName" placeholder="My Agency">
+            <label>Your Name</label><input type="text" id="sFounderName" placeholder="Full name">
+            <label>Email</label><input type="email" id="sEmail" placeholder="hello@agency.com">
+            <label>Phone</label><input type="text" id="sPhone" placeholder="+91 XXXXXXXXXX">
+            <label>Website</label><input type="text" id="sWebsite" placeholder="www.agency.com">
+            <label>Services Offered</label><textarea id="sServices" style="width:100%;margin-top:4px" placeholder="Web Design, Logo, SEO, Social Media..."></textarea>
+            <button class="btn btn-primary" style="margin-top:12px;width:100%" onclick="saveSettings()">💾 Save</button>
+          </div>
+          <div class="card settings-card">
+            <div class="section-title">Integrations</div>
+            <div id="integrationsList"></div>
+            <div style="margin-top:1rem;padding:0.8rem;background:rgba(124,92,252,0.07);border:1px solid rgba(124,92,252,0.15);border-radius:10px;font-size:0.75rem;color:#a78bfa;line-height:1.6">
+              ⚙️ Configure integrations in <code style="background:var(--card);padding:1px 5px;border-radius:4px">.env</code> file.<br>
+              See <code style="background:var(--card);padding:1px 5px;border-radius:4px">.env.example</code> for all options.
+            </div>
+          </div>
+        </div>
+        <!-- Docs -->
+        <div class="card" style="padding:1.4rem">
+          <div class="section-title">📖 Quick Start Guide</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:4px">
+            <div class="card2" style="padding:0.9rem">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">1. Setup .env</div>
+              <div style="font-size:0.75rem;color:var(--muted)">Copy .env.example → .env and fill in your API keys</div>
+            </div>
+            <div class="card2" style="padding:0.9rem">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">2. Add webhook to portfolio</div>
+              <div style="font-size:0.75rem;color:var(--muted)">Point your contact form to POST /webhook/contact_form</div>
+            </div>
+            <div class="card2" style="padding:0.9rem">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">3. Configure messaging provider</div>
+              <div style="font-size:0.75rem;color:var(--muted)">Use Telegram Bot Token for free, or Twilio WhatsApp if needed</div>
+            </div>
+            <div class="card2" style="padding:0.9rem">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:4px">4. Activate workflows</div>
+              <div style="font-size:0.75rem;color:var(--muted)">Toggle workflows ON in the Workflows page</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL: New Workflow -->
+<div class="modal-overlay" id="newWfModal">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('newWfModal')">✕</button>
+    <div class="modal-title">New Workflow</div>
+    <div class="modal-sub">Give your automation a name and category</div>
+    <label>Workflow Name</label>
+    <input type="text" id="nwfName" placeholder="e.g. WhatsApp Lead Qualifier" style="width:100%">
+    <label>Description</label>
+    <textarea id="nwfDesc" placeholder="What does this workflow do?" style="width:100%;min-height:70px"></textarea>
+    <label>Category</label>
+    <select id="nwfCategory" style="width:100%">
+      <option value="leads">Leads</option>
+      <option value="messaging">Messaging</option>
+      <option value="prospecting">Prospecting</option>
+      <option value="outreach">Outreach</option>
+      <option value="custom">Custom</option>
+    </select>
+    <label>Color</label>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <div class="color-pick" data-color="#7c5cfc" style="width:24px;height:24px;border-radius:50%;background:#7c5cfc;cursor:pointer;border:2px solid white"></div>
+      <div class="color-pick" data-color="#00e5b0" style="width:24px;height:24px;border-radius:50%;background:#00e5b0;cursor:pointer"></div>
+      <div class="color-pick" data-color="#f5c842" style="width:24px;height:24px;border-radius:50%;background:#f5c842;cursor:pointer"></div>
+      <div class="color-pick" data-color="#ff6b6b" style="width:24px;height:24px;border-radius:50%;background:#ff6b6b;cursor:pointer"></div>
+      <div class="color-pick" data-color="#a78bfa" style="width:24px;height:24px;border-radius:50%;background:#a78bfa;cursor:pointer"></div>
+    </div>
+    <input type="hidden" id="nwfColor" value="#7c5cfc">
+    <button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="createWorkflow()">Create Workflow</button>
+  </div>
+</div>
+
+<!-- MODAL: Add Lead -->
+<div class="modal-overlay" id="addLeadModal">
+  <div class="modal">
+    <button class="modal-x" onclick="closeModal('addLeadModal')">✕</button>
+    <div class="modal-title">Add Lead</div>
+    <div class="modal-sub">Manually add a lead to the CRM</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div><label>Business Name</label><input type="text" id="alName" style="width:100%"></div>
+      <div><label>Owner</label><input type="text" id="alOwner" style="width:100%"></div>
+      <div><label>Phone</label><input type="text" id="alPhone" style="width:100%"></div>
+      <div><label>Email</label><input type="email" id="alEmail" style="width:100%"></div>
+      <div><label>Budget</label><input type="text" id="alBudget" placeholder="₹XX,XXX" style="width:100%"></div>
+      <div><label>Score</label><input type="number" id="alScore" min="0" max="100" placeholder="0-100" style="width:100%"></div>
+    </div>
+    <label>Notes / Message</label>
+    <textarea id="alNotes" style="width:100%;min-height:60px"></textarea>
+    <button class="btn btn-primary" style="width:100%;margin-top:1rem" onclick="addLeadManual()">Add to CRM</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toastMsg">Done!</span></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const API = '';  // same origin
+let ws = null;
+let workflows = [];
+let leads = [];
+let executions = [];
+let nodeTypes = [];
+let canvasState = { zoom: 1, panX: 0, panY: 0, dragging: null, selectedNode: null, currentWfId: null, connecting: null };
+let autoScroll = true;
+let crmFilterStatus = '';
+let selectedColor = '#7c5cfc';
+let lastApiErrorTs = 0;
+
+// ═══════════════════════════════════════════════════════════════
+// WEBSOCKET
+// ═══════════════════════════════════════════════════════════════
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}`);
+  ws.onopen = () => {
+    document.getElementById('connDot').classList.add('live');
+    document.getElementById('connLabel').textContent = 'Connected';
+  };
+  ws.onclose = () => {
+    document.getElementById('connDot').classList.remove('live');
+    document.getElementById('connLabel').textContent = 'Disconnected';
+    setTimeout(connectWS, 3000);
+  };
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data);
+      handleWS(msg);
+    } catch {}
+  };
+}
+
+function handleWS(msg) {
+  if (msg.type === 'execution_start' || msg.type === 'execution_end') {
+    loadStats(); loadExecutions();
+  }
+  if (msg.type === 'lead_updated') {
+    loadLeads();
+  }
+  if (msg.type === 'log') {
+    appendLog(msg.payload);
+  }
+  if (msg.type === 'execution_step') {
+    appendLog({ level: 'info', message: msg.payload.step?.msg || '' });
+  }
+  if (msg.type === 'node_active') highlightCanvasNode(msg.payload.nodeId, 'running');
+  if (msg.type === 'node_done') highlightCanvasNode(msg.payload.nodeId, 'done');
+  if (msg.type === 'node_error') highlightCanvasNode(msg.payload.nodeId, 'error');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════
+function showPanel(name, el) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+
+  const titles = { dashboard:'Dashboard', workflows:'Workflows', builder:'Workflow Builder', crm:'CRM / Leads', logs:'Execution Logs', settings:'Settings' };
+  document.getElementById('topbarTitle').textContent = titles[name] || name;
+
+  if (name === 'workflows') renderWorkflows();
+  if (name === 'crm') renderCRM();
+  if (name === 'builder') initBuilder();
+  if (name === 'settings') loadSettingsUI();
+  if (name === 'dashboard') loadDashboard();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// API HELPERS
+// ═══════════════════════════════════════════════════════════════
+async function api(method, path, body) {
+  try {
+    const res = await fetch(API + '/api' + path, {
+      method, headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+
+    let payload = {};
+    try { payload = await res.json(); } catch { payload = {}; }
+
+    if (!res.ok) {
+      const msg = payload.error || `API request failed: ${method} ${path}`;
+      throw new Error(msg);
+    }
+
+    return payload;
+  } catch (e) {
+    const now = Date.now();
+    if (now - lastApiErrorTs > 8000) {
+      showToast('⚠ API error: ' + (e.message || 'Unable to reach server'));
+      lastApiErrorTs = now;
+    }
+    return getDefaultApiValue(path);
+  }
+}
+
+function getDefaultApiValue(path) {
+  if (path === '/stats') return { workflows:0, activeWorkflows:0, executions:0, successRate:0, leads:0, newLeads:0, contacted:0, closed:0 };
+  if (path === '/workflows') return [];
+  if (path === '/leads') return [];
+  if (path === '/executions?limit=30') return [];
+  if (path === '/node-types') return [];
+  if (path === '/settings') return { agencyName:'', founderName:'', email:'', services:'' };
+  return {};
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════
+async function loadDashboard() {
+  const stats = await api('GET', '/stats');
+  document.getElementById('s-workflows').textContent = stats.workflows ?? '–';
+  document.getElementById('s-active').textContent = stats.activeWorkflows ?? '–';
+  document.getElementById('s-execs').textContent = stats.executions ?? '–';
+  document.getElementById('s-success').textContent = (stats.successRate ?? '–') + (stats.successRate != null ? '%' : '');
+  document.getElementById('s-leads').textContent = stats.leads ?? '–';
+  document.getElementById('s-closed').textContent = stats.closed ?? '–';
+
+  await loadWorkflows();
+  renderDashWfList();
+  await loadExecutions();
+  renderDashExecList();
+}
+
+async function loadWorkflows() {
+  workflows = await api('GET', '/workflows');
+  document.getElementById('wfCount').textContent = workflows.length;
+  return workflows;
+}
+
+async function loadLeads() {
+  leads = await api('GET', '/leads');
+  document.getElementById('leadsCount').textContent = leads.length;
+  return leads;
+}
+
+async function loadExecutions() {
+  executions = await api('GET', '/executions?limit=30');
+  return executions;
+}
+
+async function loadStats() {
+  const stats = await api('GET', '/stats');
+  document.getElementById('s-workflows').textContent = stats.workflows ?? '–';
+  document.getElementById('s-active').textContent = stats.activeWorkflows ?? '–';
+}
+
+function renderDashWfList() {
+  const el = document.getElementById('dashWfList');
+  if (!workflows.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem">No workflows yet</div>'; return; }
+  el.innerHTML = workflows.slice(0,6).map(w => `
+    <div class="wf-mini-item" onclick="openBuilder('${w.id}')">
+      <div class="wf-dot" style="background:${w.color}"></div>
+      <div>
+        <div class="wf-name">${w.name}</div>
+        <div class="wf-cat">${w.category || 'custom'} · ${w.nodes?.length || 0} nodes</div>
+      </div>
+      <div class="toggle ${w.active ? 'on' : ''}" onclick="event.stopPropagation();toggleWorkflow('${w.id}',this)"></div>
+    </div>
+  `).join('');
+}
+
+function renderDashExecList() {
+  const el = document.getElementById('dashExecList');
+  if (!executions.length) { el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem">No executions yet</div>'; return; }
+  el.innerHTML = executions.slice(0,8).map(e => `
+    <div class="exec-item">
+      <div class="exec-status ${e.status}"></div>
+      <div class="exec-name">${e.workflowName || e.workflowId}</div>
+      <div class="exec-time">${timeAgo(e.startedAt)}</div>
+      <div style="font-size:0.68rem;color:${e.status==='success'?'var(--green)':e.status==='error'?'var(--red)':'var(--yellow)'}">${e.status}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORKFLOWS LIST
+// ═══════════════════════════════════════════════════════════════
+async function renderWorkflows() {
+  await loadWorkflows();
+  const catFilter = document.getElementById('wfCategoryFilter')?.value || '';
+  const filtered = catFilter ? workflows.filter(w => w.category === catFilter) : workflows;
+  const grid = document.getElementById('wfGrid');
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty"><div class="empty-ico">⚡</div><h3>No workflows yet</h3><div>Create your first automation</div></div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(w => `
+    <div class="wf-card fade-in" onclick="openBuilder('${w.id}')">
+      <div class="wf-card-accent" style="background:${w.color}"></div>
+      <div class="wf-card-header">
+        <div class="wf-card-name">${w.name}</div>
+        <div class="toggle ${w.active ? 'on' : ''}" onclick="event.stopPropagation();toggleWorkflow('${w.id}',this)"></div>
+      </div>
+      <div class="wf-card-desc">${w.description || 'No description'}</div>
+      <div class="wf-card-meta">
+        <span class="tag">${w.category || 'custom'}</span>
+        <span class="tag">${w.nodes?.length || 0} nodes</span>
+        <span class="tag ${w.active ? '' : ''}" style="${w.active ? 'color:var(--green);border-color:rgba(0,229,176,0.3)' : ''}">${w.active ? '● Active' : '○ Inactive'}</span>
+      </div>
+      <div class="wf-card-actions">
+        <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openBuilder('${w.id}')">✏️ Edit</button>
+        <button class="btn btn-green btn-sm" onclick="event.stopPropagation();runWorkflow('${w.id}')">▶ Run</button>
+        <button class="btn btn-red" onclick="event.stopPropagation();deleteWorkflow('${w.id}')">Delete</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function toggleWorkflow(id, el) {
+  const res = await api('PATCH', `/workflows/${id}/toggle`);
+  if (res.active !== undefined) {
+    el.classList.toggle('on', res.active);
+    showToast(res.active ? '✅ Workflow activated' : '⏸ Workflow paused');
+    loadStats();
+  }
+}
+
+async function runWorkflow(id) {
+  showToast('▶ Running workflow...');
+  const exec = await api('POST', `/workflows/${id}/run`, {});
+  if (exec.status === 'success') showToast('✅ Completed!');
+  else if (exec.status === 'skipped') showToast('⏸ Skipped: workflow is inactive');
+  else showToast('❌ Failed: ' + (exec.error || 'unknown error'));
+  loadExecutions().then(renderDashExecList);
+}
+
+async function deleteWorkflow(id) {
+  if (!confirm('Delete this workflow?')) return;
+  await api('DELETE', `/workflows/${id}`);
+  showToast('🗑 Deleted');
+  renderWorkflows();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORKFLOW BUILDER (Visual Canvas)
+// ═══════════════════════════════════════════════════════════════
+let canvasNodes = [];  // DOM references
+let canvasConnections = [];
+let currentWorkflow = null;
+let isDragging = false;
+let dragNode = null, dragOffX = 0, dragOffY = 0;
+let connectingFrom = null;
+let zoom = 1, panX = 0, panY = 0;
+let isPanning = false, panStartX = 0, panStartY = 0;
+
+async function initBuilder() {
+  nodeTypes = await api('GET', '/node-types');
+  renderNodePalette();
+  await loadWorkflows();
+  const sel = document.getElementById('canvasWorkflowSelect');
+  sel.innerHTML = workflows.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+  if (workflows.length) loadWorkflowToCanvas(workflows[0].id);
+  setupCanvasEvents();
+}
+
+function renderNodePalette() {
+  const categories = { trigger:'🎯 Triggers', ai:'🧠 AI Nodes', comms:'📡 Communication', data:'🗄 Data', logic:'🔀 Logic' };
+  const grouped = {};
+  nodeTypes.forEach(nt => { if (!grouped[nt.category]) grouped[nt.category] = []; grouped[nt.category].push(nt); });
+  const palette = document.getElementById('btab-nodes');
+  palette.innerHTML = Object.entries(categories).map(([cat, label]) => {
+    const nodes = grouped[cat] || [];
+    return `<div class="palette-category">${label}</div>` +
+      nodes.map(n => `
+        <div class="palette-node" draggable="true" data-type="${n.type}" data-label="${n.label}"
+          ondragstart="paletteDragStart(event,'${n.type}','${n.label}','${n.color}')">
+          <span class="palette-icon">${n.icon}</span>
+          <div class="palette-info">
+            <div class="palette-name">${n.label}</div>
+            <div class="palette-desc">${n.description}</div>
+          </div>
+        </div>
+      `).join('');
+  }).join('');
+}
+
+async function loadWorkflowToCanvas(wfId) {
+  currentWorkflow = workflows.find(w => w.id === wfId) || null;
+  if (!currentWorkflow) return;
+  renderCanvas();
+}
+
+function renderCanvas() {
+  if (!currentWorkflow) return;
+  const layer = document.getElementById('nodes-layer');
+  const svg = document.getElementById('connections-svg');
+  layer.innerHTML = '';
+  canvasNodes = [];
+
+  // Size canvas
+  const area = document.getElementById('canvasArea');
+  const W = area.clientWidth, H = area.clientHeight;
+  const canvas = document.getElementById('workflow-canvas');
+  canvas.width = W; canvas.height = H;
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  svg.innerHTML = '<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#32324a"/></marker></defs>';
+  layer.style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+
+  (currentWorkflow.nodes || []).forEach(node => {
+    const el = createNodeEl(node);
+    layer.appendChild(el);
+    canvasNodes.push({ id: node.id, el, node });
+  });
+
+  drawConnections();
+}
+
+function createNodeEl(node) {
+  const nt = nodeTypes.find(t => t.type === node.type) || { icon:'⬡', color:'#444', label: node.type };
+  const el = document.createElement('div');
+  el.className = 'canvas-node';
+  el.id = 'cn_' + node.id;
+  el.style.left = (node.x || 100) + 'px';
+  el.style.top = (node.y || 100) + 'px';
+  el.innerHTML = `
+    <div class="node-header" style="background:${nt.color}22;border-bottom:1px solid ${nt.color}44">
+      <span class="node-icon">${nt.icon}</span>
+      <span class="node-label">${node.label || nt.label}</span>
+    </div>
+    <div class="node-body">${node.type.replace('_',' ')}</div>
+    ${node.type.startsWith('trigger_') ? '' : '<div class="node-port in"></div>'}
+    <div class="node-port out"></div>
+  `;
+  el.style.borderColor = nt.color + '44';
+
+  // Drag
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('node-port')) return;
+    isDragging = true;
+    dragNode = node;
+    const rect = el.getBoundingClientRect();
+    dragOffX = (e.clientX - rect.left) / zoom;
+    dragOffY = (e.clientY - rect.top) / zoom;
+    el.classList.add('selected');
+    canvasNodes.forEach(cn => { if(cn.id !== node.id) cn.el.classList.remove('selected'); });
+    showNodeProps(node);
+    e.preventDefault();
+  });
+
+  // Port: start connection
+  el.querySelector('.node-port.out')?.addEventListener('mousedown', (e) => {
+    connectingFrom = node.id;
+    e.stopPropagation();
+  });
+
+  // Port: end connection
+  el.querySelector('.node-port.in')?.addEventListener('mouseup', (e) => {
+    if (connectingFrom && connectingFrom !== node.id) {
+      if (!currentWorkflow.connections) currentWorkflow.connections = [];
+      const exists = currentWorkflow.connections.find(c => c.from === connectingFrom && c.to === node.id);
+      if (!exists) {
+        currentWorkflow.connections.push({ from: connectingFrom, to: node.id });
+        drawConnections();
+        showToast('Connection added');
+      }
+    }
+    connectingFrom = null;
+    e.stopPropagation();
+  });
+
+  return el;
+}
+
+function drawConnections() {
+  const svg = document.getElementById('connections-svg');
+  const defs = svg.querySelector('defs');
+  svg.innerHTML = '';
+  if (defs) svg.appendChild(defs);
+  else svg.innerHTML = '<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill="#32324a"/></marker></defs>';
+
+  (currentWorkflow?.connections || []).forEach(conn => {
+    const fromEl = document.getElementById('cn_' + conn.from);
+    const toEl = document.getElementById('cn_' + conn.to);
+    if (!fromEl || !toEl) return;
+    const area = document.getElementById('canvasArea').getBoundingClientRect();
+    const fr = fromEl.getBoundingClientRect();
+    const tr = toEl.getBoundingClientRect();
+    const x1 = (fr.right - area.left);
+    const y1 = (fr.top + fr.height/2 - area.top);
+    const x2 = (tr.left - area.left);
+    const y2 = (tr.top + tr.height/2 - area.top);
+    const cx = (x1 + x2) / 2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
+    path.setAttribute('class','connection-path');
+    path.setAttribute('marker-end','url(#arrow)');
+    svg.appendChild(path);
+  });
+}
+
+function setupCanvasEvents() {
+  const area = document.getElementById('canvasArea');
+
+  // Mouse move: drag node or pan
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging && dragNode) {
+      const el = document.getElementById('cn_' + dragNode.id);
+      if (!el) return;
+      const areaRect = area.getBoundingClientRect();
+      const x = (e.clientX - areaRect.left - panX) / zoom - dragOffX;
+      const y = (e.clientY - areaRect.top - panY) / zoom - dragOffY;
+      el.style.left = Math.max(0,x) + 'px';
+      el.style.top = Math.max(0,y) + 'px';
+      dragNode.x = Math.max(0,x);
+      dragNode.y = Math.max(0,y);
+      drawConnections();
+    }
+    if (isPanning) {
+      panX += e.clientX - panStartX;
+      panY += e.clientY - panStartY;
+      panStartX = e.clientX; panStartY = e.clientY;
+      document.getElementById('nodes-layer').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+      drawConnections();
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    isDragging = false; dragNode = null;
+    isPanning = false;
+    connectingFrom = null;
+  });
+
+  // Middle-click pan
+  area.addEventListener('mousedown', (e) => {
+    if (e.button === 1 || (e.button === 0 && e.altKey)) {
+      isPanning = true; panStartX = e.clientX; panStartY = e.clientY; e.preventDefault();
+    }
+  });
+
+  // Zoom
+  area.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -0.08 : 0.08;
+    zoomCanvas(delta);
+  });
+
+  // Drop from palette
+  area.addEventListener('dragover', (e) => e.preventDefault());
+  area.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('nodeType');
+    const label = e.dataTransfer.getData('nodeLabel');
+    const color = e.dataTransfer.getData('nodeColor');
+    if (!type || !currentWorkflow) return;
+    const rect = area.getBoundingClientRect();
+    const x = (e.clientX - rect.left - panX) / zoom;
+    const y = (e.clientY - rect.top - panY) / zoom;
+    const newNode = { id: 'n_' + Date.now(), type, label, x, y, config: {} };
+    if (!currentWorkflow.nodes) currentWorkflow.nodes = [];
+    currentWorkflow.nodes.push(newNode);
+    const el = createNodeEl(newNode);
+    document.getElementById('nodes-layer').appendChild(el);
+    canvasNodes.push({ id: newNode.id, el, node: newNode });
+    showToast('Node added: ' + label);
+  });
+}
+
+function paletteDragStart(e, type, label, color) {
+  e.dataTransfer.setData('nodeType', type);
+  e.dataTransfer.setData('nodeLabel', label);
+  e.dataTransfer.setData('nodeColor', color);
+}
+
+function zoomCanvas(delta) {
+  zoom = Math.max(0.3, Math.min(2, zoom + delta));
+  document.getElementById('nodes-layer').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`;
+  drawConnections();
+}
+
+function fitCanvas() { zoom = 1; panX = 60; panY = 60; document.getElementById('nodes-layer').style.transform = `translate(${panX}px,${panY}px) scale(${zoom})`; drawConnections(); }
+
+function openBuilder(wfId) {
+  showPanel('builder', document.querySelector('.nav-item:nth-child(5)'));
+  setTimeout(() => {
+    const sel = document.getElementById('canvasWorkflowSelect');
+    if (sel) { sel.value = wfId; loadWorkflowToCanvas(wfId); }
+  }, 100);
+}
+
+async function saveCurrentWorkflow() {
+  if (!currentWorkflow) return;
+  await api('PUT', `/workflows/${currentWorkflow.id}`, currentWorkflow);
+  showToast('💾 Workflow saved!');
+}
+
+async function runCurrentWorkflow() {
+  if (!currentWorkflow) return;
+  await runWorkflow(currentWorkflow.id);
+}
+
+function showNodeProps(node) {
+  const panel = document.getElementById('btab-props');
+  const nt = nodeTypes.find(t => t.type === node.type) || {};
+  panel.style.display = 'block';
+  document.getElementById('propsPanel').innerHTML = `
+    <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;margin-bottom:0.8rem">${nt.icon || '⬡'} ${node.label || node.type}</div>
+    <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem">${nt.description || ''}</div>
+    <div class="config-field"><label>Label</label><input type="text" value="${node.label || ''}" oninput="updateNodeLabel('${node.id}', this.value)" style="width:100%"></div>
+    ${getConfigFields(node, nt)}
+    <button class="btn btn-red" style="margin-top:10px;width:100%" onclick="deleteNode('${node.id}')">🗑 Delete Node</button>
+  `;
+}
+
+function updateNodeLabel(nodeId, value) {
+  const node = currentWorkflow?.nodes?.find(n => n.id === nodeId);
+  if (!node) return;
+  node.label = value;
+  const el = document.getElementById('cn_' + nodeId);
+  if (el) {
+    const labelEl = el.querySelector('.node-label');
+    if (labelEl) labelEl.textContent = value || node.type;
+  }
+}
+
+function getConfigFields(node, nt) {
+  const cfg = node.config || {};
+  const fields = {
+    trigger_webhook: [['source','Webhook Source','contact_form']],
+    trigger_schedule: [['cron','Cron Expression','0 9 * * *'],['label','Schedule Label','Daily 9AM']],
+    action_ai_generate: [['template','Template','cold_email']],
+    action_ai_prospect: [['niche','Target Niche','restaurants'],['location','City','Mumbai'],['count','Count','10']],
+    action_send_email: [['to','To (use {{data.email}})','{{data.email}}'],['subject','Subject','']],
+    action_whatsapp_reply: [['to','To Number','{{data.from}}']],
+    action_sheets_append: [['sheetId','Google Sheet ID',''],['range','Range','Sheet1!A:Z']],
+    action_notify: [['message','Message','{{data.name}} is interested']],
+    action_condition: [['condition','JavaScript Condition','data.budget > 50000']],
+    action_javascript: [['code','JavaScript Code (return object)','return { result: data.name.toUpperCase() };']],
+    action_http_request: [['url','URL','https://api.example.com'],['method','Method','POST']],
+    action_delay: [['seconds','Delay (seconds)','5']],
+  };
+  const f = fields[nt.type] || [];
+  return f.map(([key, label, placeholder]) => `
+    <div class="config-field">
+      <label>${label}</label>
+      <input type="text" value="${cfg[key]||''}" placeholder="${placeholder}" 
+        oninput="if(!currentWorkflow.nodes.find(n=>n.id==='${node.id}').config)currentWorkflow.nodes.find(n=>n.id==='${node.id}').config={};currentWorkflow.nodes.find(n=>n.id==='${node.id}').config['${key}']=this.value"
+        style="width:100%">
+    </div>
+  `).join('');
+}
+
+function switchBuilderTab(tab, el) {
+  document.querySelectorAll('.builder-stab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('btab-nodes').style.display = tab === 'nodes' ? 'flex' : 'none';
+  document.getElementById('btab-nodes').style.flexDirection = 'column';
+  document.getElementById('btab-props').style.display = tab === 'props' ? 'flex' : 'none';
+  document.getElementById('btab-props').style.flexDirection = 'column';
+}
+
+function highlightCanvasNode(nodeId, state) {
+  const el = document.getElementById('cn_' + nodeId);
+  if (!el) return;
+  el.classList.remove('running','done','error');
+  el.classList.add(state);
+  if (state === 'done') setTimeout(() => el.classList.remove('done'), 3000);
+}
+
+function deleteNode(nodeId) {
+  if (!currentWorkflow) return;
+  currentWorkflow.nodes = currentWorkflow.nodes.filter(n => n.id !== nodeId);
+  currentWorkflow.connections = currentWorkflow.connections.filter(c => c.from !== nodeId && c.to !== nodeId);
+  renderCanvas();
+  document.getElementById('propsPanel').textContent = 'Select a node to edit its properties';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CRM
+// ═══════════════════════════════════════════════════════════════
+async function renderCRM() {
+  await loadLeads();
+  const search = (document.getElementById('crmSearch')?.value || '').toLowerCase();
+  const filtered = leads.filter(l => {
+    const ms = !search || (l.name||'').toLowerCase().includes(search) || (l.email||'').toLowerCase().includes(search);
+    const mf = !crmFilterStatus || l.status === crmFilterStatus;
+    return ms && mf;
+  });
+  const tbody = document.getElementById('crmBody');
+  const empty = document.getElementById('crmEmpty');
+  if (!filtered.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = filtered.map((l,i) => {
+    const sc = (l.score||50) >= 75 ? 'sp-h' : (l.score||50) >= 50 ? 'sp-m' : 'sp-l';
+    const st = (l.status||'New').toLowerCase().replace(' ','');
+    return `<tr>
+      <td style="color:var(--muted);font-family:'DM Mono',monospace;font-size:0.7rem">${i+1}</td>
+      <td><strong>${l.name||'—'}</strong></td>
+      <td style="font-size:0.78rem">${l.owner||'—'}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:0.74rem">${l.phone||'—'}</td>
+      <td style="font-size:0.74rem;color:var(--muted)">${l.email||'—'}</td>
+      <td>${(l.needs||[]).slice(0,2).map(n=>`<span style="font-size:0.66rem;background:rgba(124,92,252,0.1);border:1px solid rgba(124,92,252,0.2);color:#a78bfa;padding:1px 6px;border-radius:10px;margin-right:3px">${n}</span>`).join('')}</td>
+      <td style="font-size:0.78rem">${l.estimatedBudget||l.budget||'—'}</td>
+      <td>
+        <select class="status-pill s-${st}" onchange="updateLeadStatus('${l.id}',this.value)" style="background:transparent;border:none;font-size:0.68rem;cursor:pointer;color:inherit">
+          <option ${l.status==='New'?'selected':''}>New</option>
+          <option ${l.status==='Contacted'?'selected':''}>Contacted</option>
+          <option ${l.status==='Interested'?'selected':''}>Interested</option>
+          <option ${l.status==='Closed'?'selected':''}>Closed</option>
+          <option ${l.status==='Lost'?'selected':''}>Lost</option>
+        </select>
+      </td>
+      <td><span class="score-pip ${sc}">${l.score||'?'}</span></td>
+      <td style="font-size:0.72rem;color:var(--muted)">${l.source||'—'}</td>
+      <td style="font-size:0.7rem;color:var(--muted);white-space:nowrap">${formatDate(l.createdAt)}</td>
+      <td><button class="btn btn-red" onclick="deleteLead('${l.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateLeadStatus(id, status) {
+  await api('PATCH', `/leads/${id}`, { status });
+}
+
+async function deleteLead(id) {
+  if (!confirm('Delete this lead?')) return;
+  await api('DELETE', `/leads/${id}`);
+  leads = leads.filter(l => l.id !== id);
+  renderCRM();
+  showToast('Lead removed');
+}
+
+function exportLeadsCSV() {
+  if (!leads.length) { showToast('No leads to export'); return; }
+  const h = ['#','Business','Owner','Phone','Email','Address','Needs','Budget','Status','Score','Source','Added'];
+  const rows = leads.map((l,i) => [i+1,l.name,l.owner,l.phone,l.email,l.address,(l.needs||[]).join(' | '),l.estimatedBudget||l.budget,l.status,l.score,l.source,l.createdAt]);
+  const csv = [h,...rows].map(r => r.map(v => `"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download = 'agencyflow_leads_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  showToast('📥 CSV exported!');
+}
+
+function showAddLeadModal() { document.getElementById('addLeadModal').classList.add('open'); }
+
+async function addLeadManual() {
+  const lead = {
+    name: document.getElementById('alName').value,
+    owner: document.getElementById('alOwner').value,
+    phone: document.getElementById('alPhone').value,
+    email: document.getElementById('alEmail').value,
+    budget: document.getElementById('alBudget').value,
+    score: parseInt(document.getElementById('alScore').value) || 50,
+    notes: document.getElementById('alNotes').value,
+    source: 'manual', status: 'New'
+  };
+  await api('POST', '/leads', lead);
+  closeModal('addLeadModal');
+  renderCRM();
+  showToast('✅ Lead added!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LOGS
+// ═══════════════════════════════════════════════════════════════
+function appendLog(entry) {
+  const el = document.getElementById('logStream');
+  if (el.querySelector('div[style]') && el.children.length === 1) el.innerHTML = '';
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  const ts = entry.ts ? new Date(entry.ts).toLocaleTimeString() : new Date().toLocaleTimeString();
+  line.innerHTML = `<span class="log-ts">${ts}</span><span class="log-lvl ${entry.level||'info'}">${(entry.level||'INFO').toUpperCase()}</span><span class="log-msg">${entry.message||''}</span>`;
+  el.appendChild(line);
+  if (autoScroll) el.scrollTop = el.scrollHeight;
+  // Limit
+  while (el.children.length > 300) el.removeChild(el.firstChild);
+}
+
+function clearLogs() { document.getElementById('logStream').innerHTML = '<div style="color:var(--muted);font-size:0.75rem">Log cleared.</div>'; }
+function toggleAutoScroll() { autoScroll = !autoScroll; document.getElementById('autoScrollLbl').textContent = autoScroll ? 'ON' : 'OFF'; }
+
+// ═══════════════════════════════════════════════════════════════
+// SETTINGS
+// ═══════════════════════════════════════════════════════════════
+async function loadSettingsUI() {
+  const s = await api('GET', '/settings');
+  if (s.agencyName) document.getElementById('sAgencyName').value = s.agencyName;
+  if (s.founderName) document.getElementById('sFounderName').value = s.founderName;
+  if (s.email) document.getElementById('sEmail').value = s.email;
+  if (s.phone) document.getElementById('sPhone').value = s.phone;
+  if (s.website) document.getElementById('sWebsite').value = s.website;
+  if (s.services) document.getElementById('sServices').value = s.services;
+
+  document.getElementById('integrationsList').innerHTML = [
+    { icon:'📧', name:'Gmail / SMTP', env:'SMTP_USER' },
+    { icon:'💬', name:'Telegram (Free)', env:'TELEGRAM_BOT_TOKEN' },
+    { icon:'📱', name:'Twilio WhatsApp (Optional)', env:'TWILIO_ACCOUNT_SID' },
+    { icon:'📊', name:'Excel File', env:'EXCEL_FILE_PATH' },
+    { icon:'🤖', name:'AI Provider', env:'OPENROUTER_API_KEY / GROQ_API_KEY' },
+    { icon:'💬', name:'Slack', env:'SLACK_WEBHOOK_URL' },
+  ].map(i => `
+    <div class="integration-item">
+      <div class="integration-icon">${i.icon}</div>
+      <div class="integration-name">${i.name}</div>
+      <div class="integration-status missing">Set ${i.env} in .env</div>
+    </div>
+  `).join('');
+}
+
+async function saveSettings() {
+  const s = {
+    agencyName: document.getElementById('sAgencyName').value,
+    founderName: document.getElementById('sFounderName').value,
+    email: document.getElementById('sEmail').value,
+    phone: document.getElementById('sPhone').value,
+    website: document.getElementById('sWebsite').value,
+    services: document.getElementById('sServices').value,
+  };
+  await api('POST', '/settings', s);
+  showToast('💾 Settings saved!');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════════════════
+function showNewWorkflowModal() {
+  document.getElementById('newWfModal').classList.add('open');
+  document.querySelectorAll('.color-pick').forEach(el => {
+    el.style.border = el.dataset.color === '#7c5cfc' ? '2px solid white' : 'none';
+    el.onclick = () => {
+      selectedColor = el.dataset.color;
+      document.getElementById('nwfColor').value = el.dataset.color;
+      document.querySelectorAll('.color-pick').forEach(c => c.style.border = 'none');
+      el.style.border = '2px solid white';
+    };
+  });
+}
+
+async function createWorkflow() {
+  const name = document.getElementById('nwfName').value.trim();
+  if (!name) { showToast('Enter a name'); return; }
+  const wf = await api('POST', '/workflows', {
+    name, description: document.getElementById('nwfDesc').value,
+    category: document.getElementById('nwfCategory').value,
+    color: document.getElementById('nwfColor').value,
+    nodes: [], connections: []
+  });
+  closeModal('newWfModal');
+  showToast('✅ Workflow created!');
+  await loadWorkflows();
+  renderWorkflows();
+  openBuilder(wf.id);
+}
+
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function timeAgo(isoStr) {
+  if (!isoStr) return '—';
+  const diff = Date.now() - new Date(isoStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return m + 'm ago';
+  const h = Math.floor(m / 60);
+  if (h < 24) return h + 'h ago';
+  return Math.floor(h/24) + 'd ago';
+}
+
+function formatDate(isoStr) {
+  if (!isoStr) return '—';
+  return new Date(isoStr).toLocaleDateString('en-IN');
+}
+
+// ─── MOCK DATA (used when backend isn't running) ─────────────
+function getSampleWorkflows() {
+  return [
+    { id:'wf_contact_form', name:'🌐 Contact Form Auto-Reply', description:'Auto-reply to portfolio contact form submissions', active:true, color:'#7c5cfc', category:'leads', nodes:[{id:'n1',type:'trigger_webhook',label:'Contact Form',x:60,y:180},{id:'n2',type:'action_save_lead',label:'Save Lead',x:300,y:180},{id:'n3',type:'action_ai_generate',label:'AI Reply',x:540,y:180},{id:'n4',type:'action_send_email',label:'Send Email',x:780,y:180}], connections:[{from:'n1',to:'n2'},{from:'n2',to:'n3'},{from:'n3',to:'n4'}] },
+    { id:'wf_whatsapp_reply', name:'💬 WhatsApp Auto-Responder', description:'AI qualifies leads from WhatsApp messages', active:true, color:'#00e5b0', category:'messaging', nodes:[{id:'n1',type:'trigger_webhook',label:'WA Message',x:60,y:180},{id:'n2',type:'action_ai_qualify',label:'Qualify',x:300,y:180},{id:'n3',type:'action_whatsapp_reply',label:'WA Reply',x:540,y:180}], connections:[{from:'n1',to:'n2'},{from:'n2',to:'n3'}] },
+    { id:'wf_daily_prospecting', name:'🎯 Daily Lead Prospector', description:'AI finds 10 new prospects every morning', active:false, color:'#f5c842', category:'prospecting', nodes:[{id:'n1',type:'trigger_schedule',label:'9AM Daily',x:60,y:180},{id:'n2',type:'action_ai_prospect',label:'Find Leads',x:300,y:180},{id:'n3',type:'action_sheets_append',label:'Log to Sheet',x:540,y:180}], connections:[{from:'n1',to:'n2'},{from:'n2',to:'n3'}] },
+    { id:'wf_cold_outreach', name:'📧 Cold Email Campaign', description:'Personalized cold emails for each lead in sheet', active:true, color:'#ff6b6b', category:'outreach', nodes:[{id:'n1',type:'trigger_manual',label:'Trigger',x:60,y:180},{id:'n2',type:'action_sheets_read',label:'Read Leads',x:300,y:180},{id:'n3',type:'action_ai_generate',label:'Gen Email',x:540,y:180},{id:'n4',type:'action_send_email',label:'Send',x:780,y:180}], connections:[{from:'n1',to:'n2'},{from:'n2',to:'n3'},{from:'n3',to:'n4'}] },
+    { id:'wf_follow_up', name:'🔄 Follow-Up Sequence', description:'Auto follow-up for stale leads every Monday', active:false, color:'#a78bfa', category:'outreach', nodes:[{id:'n1',type:'trigger_schedule',label:'Monday 10AM',x:60,y:180},{id:'n2',type:'action_sheets_read',label:'Stale Leads',x:300,y:180},{id:'n3',type:'action_ai_generate',label:'Follow-up',x:540,y:180},{id:'n4',type:'action_send_email',label:'Send',x:780,y:180}], connections:[{from:'n1',to:'n2'},{from:'n2',to:'n3'},{from:'n3',to:'n4'}] }
+  ];
+}
+
+function getSampleLeads() {
+  return [
+    { id:'l1', name:'Spice Garden Restaurant', owner:'Rahul Sharma', phone:'+91 98XXXXXXXX', email:'spicegarden@gmail.com', address:'Bandra, Mumbai', needs:['website','social media'], estimatedBudget:'₹35,000', status:'Contacted', score:82, source:'ai_prospector', createdAt:'2025-04-01T10:00:00Z' },
+    { id:'l2', name:'Glam Studio Salon', owner:'Priya Mehta', phone:'+91 97XXXXXXXX', email:'glamsalon@gmail.com', address:'Koregaon Park, Pune', needs:['logo','instagram'], estimatedBudget:'₹20,000', status:'New', score:67, source:'contact_form', createdAt:'2025-04-02T09:00:00Z' },
+    { id:'l3', name:'PropNext Realty', owner:'Vikram Singh', phone:'+91 96XXXXXXXX', email:'propnext@gmail.com', address:'Gurgaon, Delhi NCR', needs:['website','SEO','content'], estimatedBudget:'₹1,20,000', status:'Interested', score:91, source:'whatsapp', createdAt:'2025-04-03T14:00:00Z' },
+    { id:'l4', name:'FitLife Gym', owner:'Arjun Kapoor', phone:'+91 95XXXXXXXX', email:'fitlifegym@yahoo.com', address:'Andheri, Mumbai', needs:['website','marketing'], estimatedBudget:'₹45,000', status:'New', score:74, source:'ai_prospector', createdAt:'2025-04-04T11:00:00Z' },
+    { id:'l5', name:'Smile Dental Clinic', owner:'Dr. Neha Joshi', phone:'+91 94XXXXXXXX', email:'smileclinic@gmail.com', address:'Jayanagar, Bangalore', needs:['website','Google My Business'], estimatedBudget:'₹28,000', status:'Closed', score:88, source:'ai_prospector', createdAt:'2025-04-05T16:00:00Z' },
+  ];
+}
+
+function getSampleExecutions() {
+  return [
+    { id:'e1', workflowId:'wf_contact_form', workflowName:'🌐 Contact Form Auto-Reply', status:'success', startedAt: new Date(Date.now()-3600000).toISOString(), trigger:'webhook:contact_form' },
+    { id:'e2', workflowId:'wf_whatsapp_reply', workflowName:'💬 WhatsApp Auto-Responder', status:'success', startedAt: new Date(Date.now()-7200000).toISOString(), trigger:'webhook:whatsapp' },
+    { id:'e3', workflowId:'wf_cold_outreach', workflowName:'📧 Cold Email Campaign', status:'error', startedAt: new Date(Date.now()-86400000).toISOString(), trigger:'manual' },
+    { id:'e4', workflowId:'wf_daily_prospecting', workflowName:'🎯 Daily Lead Prospector', status:'success', startedAt: new Date(Date.now()-172800000).toISOString(), trigger:'schedule' },
+  ];
+}
+
+function getSampleNodeTypes() {
+  return [
+    { type:'trigger_webhook', category:'trigger', label:'Webhook / Form', icon:'🌐', color:'#7c5cfc', description:'Trigger when webhook received' },
+    { type:'trigger_schedule', category:'trigger', label:'Schedule', icon:'⏰', color:'#7c5cfc', description:'Run on cron schedule' },
+    { type:'trigger_manual', category:'trigger', label:'Manual', icon:'▶', color:'#7c5cfc', description:'Manual or API trigger' },
+    { type:'action_ai_generate', category:'ai', label:'AI Generate', icon:'🧠', color:'#a78bfa', description:'Generate emails, messages, scripts' },
+    { type:'action_ai_qualify', category:'ai', label:'AI Qualify Lead', icon:'🎯', color:'#a78bfa', description:'Extract budget, intent from message' },
+    { type:'action_ai_prospect', category:'ai', label:'AI Prospect', icon:'🔍', color:'#a78bfa', description:'Find potential clients in a niche' },
+    { type:'action_send_email', category:'comms', label:'Send Email', icon:'📧', color:'#00e5b0', description:'Send via Gmail/SMTP' },
+    { type:'action_whatsapp_reply', category:'comms', label:'Message Reply', icon:'💬', color:'#00e5b0', description:'Send via Telegram (free) or Twilio' },
+    { type:'action_notify', category:'comms', label:'Notify Me', icon:'🔔', color:'#00e5b0', description:'Slack or WhatsApp notification' },
+    { type:'action_save_lead', category:'data', label:'Save Lead', icon:'💾', color:'#f5c842', description:'Save lead in CRM' },
+    { type:'action_sheets_append', category:'data', label:'Sheet: Add Row', icon:'📊', color:'#f5c842', description:'Append to Excel or Google Sheets' },
+    { type:'action_sheets_read', category:'data', label:'Sheet: Read', icon:'📖', color:'#f5c842', description:'Read from Excel or Google Sheets' },
+    { type:'action_sheets_update', category:'data', label:'Sheet: Update', icon:'✏️', color:'#f5c842', description:'Update row in Excel or Google Sheets' },
+    { type:'action_condition', category:'logic', label:'Condition / If', icon:'🔀', color:'#ff6b6b', description:'Branch on condition' },
+    { type:'action_javascript', category:'logic', label:'Custom JavaScript', icon:'{ }', color:'#ff6b6b', description:'Run custom JS code' },
+    { type:'action_http_request', category:'logic', label:'HTTP Request', icon:'🌐', color:'#ff6b6b', description:'Call any external API' },
+    { type:'action_delay', category:'logic', label:'Delay', icon:'⏱', color:'#ff6b6b', description:'Wait N seconds' },
+  ];
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
+(async () => {
+  connectWS();
+  nodeTypes = await api('GET', '/node-types');
+  if (!nodeTypes.length) nodeTypes = getSampleNodeTypes();
+  await loadDashboard();
+  await loadLeads();
+})();
+</script>
+</body>
+</html>
