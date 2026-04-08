@@ -340,12 +340,16 @@ Return ONLY a JSON array:
     const { data } = ctx;
     const sheetsConfig = getSheetsConfig();
     const excelPath = getExcelPath(config);
-    const targetSheetId = config.sheetId || process.env.DEFAULT_SHEET_ID;
+    const targetSheetId = normalizeSheetId(config.sheetId) || normalizeSheetId(process.env.DEFAULT_SHEET_ID);
 
     if (targetSheetId && sheetsConfig.credentialsPath) {
       try {
+        const credsPath = sheetsConfig.credentialsPath;
+        if (!fs.existsSync(credsPath)) {
+          throw new Error(`Google credentials file not found at ${credsPath}`);
+        }
         const auth = new google.auth.GoogleAuth({
-          keyFile: sheetsConfig.credentialsPath,
+          keyFile: credsPath,
           scopes: ['https://www.googleapis.com/auth/spreadsheets']
         });
         const sheets = google.sheets({ version: 'v4', auth });
@@ -360,15 +364,36 @@ Return ONLY a JSON array:
           lead.painPoints || lead.notes || ''
         ]);
 
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: targetSheetId,
-          range: config.range || 'Leads!A:L',
-          valueInputOption: 'USER_ENTERED',
-          resource: { values: rows }
-        });
+        const preferredRange = config.range || 'Leads!A:L';
+        const fallbackRange = 'Sheet1!A:L';
+        let appended = false;
+        let usedRange = preferredRange;
 
-        ctx.log(`Rows appended to Google Sheet: ${rows.length} (${targetSheetId})`);
-        return { sheetsAppended: true, google: true, appendedCount: rows.length };
+        try {
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: targetSheetId,
+            range: preferredRange,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: rows }
+          });
+          appended = true;
+        } catch (appendErr) {
+          // If named tab doesn't exist, retry with Sheet1.
+          await sheets.spreadsheets.values.append({
+            spreadsheetId: targetSheetId,
+            range: fallbackRange,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: rows }
+          });
+          appended = true;
+          usedRange = fallbackRange;
+          ctx.log(`Primary range append failed (${appendErr.message}). Retried with ${fallbackRange}`);
+        }
+
+        if (appended) {
+          ctx.log(`Rows appended to Google Sheet: ${rows.length} (${targetSheetId}, ${usedRange})`);
+          return { sheetsAppended: true, google: true, appendedCount: rows.length };
+        }
       } catch (e) {
         ctx.log(`Google Sheets append fallback: ${e.message}`);
       }
@@ -606,6 +631,14 @@ function getSheetsConfig() {
   return {
     credentialsPath: process.env.GOOGLE_CREDENTIALS_PATH || ''
   };
+}
+
+function normalizeSheetId(value) {
+  if (!value) return '';
+  const v = String(value).trim();
+  if (!v) return '';
+  if (v === 'YOUR_SHEET_ID' || v === 'your_sheet_id_here') return '';
+  return v;
 }
 
 function getExcelPath(config = {}) {
