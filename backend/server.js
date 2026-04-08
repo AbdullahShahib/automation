@@ -17,9 +17,11 @@ const workflowEngine = require('./workflowEngine');
 const routes = require('./routes');
 const { log } = require('./logger');
 
+const isServerless = process.env.VERCEL === '1' || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+
 const app = express();
-const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const server = isServerless ? null : http.createServer(app);
+const wss = isServerless ? null : new WebSocket.Server({ server });
 
 // Middleware
 app.use(cors());
@@ -29,6 +31,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 // WebSocket broadcast helper
 global.broadcast = (type, payload) => {
+  if (!wss) return;
   const msg = JSON.stringify({ type, payload, ts: Date.now() });
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) client.send(msg);
@@ -36,22 +39,24 @@ global.broadcast = (type, payload) => {
 };
 
 // WebSocket connection
-wss.on('connection', (ws) => {
-  log('info', 'WebSocket client connected');
-  ws.send(JSON.stringify({ type: 'connected', payload: { message: 'AgencyFlow live!' } }));
+if (wss) {
+  wss.on('connection', (ws) => {
+    log('info', 'WebSocket client connected');
+    ws.send(JSON.stringify({ type: 'connected', payload: { message: 'AgencyFlow live!' } }));
 
-  ws.on('message', async (raw) => {
-    try {
-      const msg = JSON.parse(raw);
-      if (msg.type === 'run_workflow') {
-        await workflowEngine.runWorkflow(msg.workflowId, msg.inputData || {});
+    ws.on('message', async (raw) => {
+      try {
+        const msg = JSON.parse(raw);
+        if (msg.type === 'run_workflow') {
+          await workflowEngine.runWorkflow(msg.workflowId, msg.inputData || {});
+        }
+        if (msg.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
+      } catch (e) {
+        log('error', 'WS message error: ' + e.message);
       }
-      if (msg.type === 'ping') ws.send(JSON.stringify({ type: 'pong' }));
-    } catch (e) {
-      log('error', 'WS message error: ' + e.message);
-    }
+    });
   });
-});
+}
 
 // API Routes
 app.use('/api', routes);
@@ -75,13 +80,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-// Start scheduled workflows
-workflowEngine.startScheduledJobs();
+if (!isServerless) {
+  // Start scheduled workflows in long-running server mode only.
+  workflowEngine.startScheduledJobs();
 
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-  log('info', `AgencyFlow running on http://localhost:${PORT}`);
-  log('info', 'Webhook URL: http://localhost:' + PORT + '/webhook/:source');
-});
+  const PORT = process.env.PORT || 3000;
+  server.listen(PORT, () => {
+    log('info', `AgencyFlow running on http://localhost:${PORT}`);
+    log('info', 'Webhook URL: http://localhost:' + PORT + '/webhook/:source');
+  });
+}
 
 module.exports = { app, server };
