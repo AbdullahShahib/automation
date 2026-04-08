@@ -60,10 +60,7 @@ class WorkflowEngine {
   deleteWorkflow(id) {
     const workflows = this.getWorkflows().filter(w => w.id !== id);
     this.saveWorkflows(workflows);
-    if (this.scheduledJobs[id]) {
-      this.scheduledJobs[id].destroy();
-      delete this.scheduledJobs[id];
-    }
+    this.stopScheduledJob(id);
   }
 
   // ─── EXECUTION ────────────────────────────────────────────────
@@ -205,7 +202,7 @@ class WorkflowEngine {
   }
 
   scheduleWorkflow(workflowId, cronExpr) {
-    if (this.scheduledJobs[workflowId]) this.scheduledJobs[workflowId].destroy();
+    this.stopScheduledJob(workflowId);
     try {
       this.scheduledJobs[workflowId] = cron.schedule(cronExpr, () => {
         this.runWorkflow(workflowId, {}, 'schedule');
@@ -214,6 +211,18 @@ class WorkflowEngine {
     } catch (e) {
       log('error', `Invalid cron for workflow ${workflowId}: ${e.message}`);
     }
+  }
+
+  stopScheduledJob(workflowId) {
+    const job = this.scheduledJobs[workflowId];
+    if (!job) return;
+    try {
+      if (typeof job.destroy === 'function') job.destroy();
+      else if (typeof job.stop === 'function') job.stop();
+    } catch (e) {
+      log('warn', `Failed to stop scheduled job ${workflowId}: ${e.message}`);
+    }
+    delete this.scheduledJobs[workflowId];
   }
 
   // ─── EXECUTIONS ───────────────────────────────────────────────
